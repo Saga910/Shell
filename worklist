@@ -1,0 +1,9 @@
+basic order is:
+- util xxxxxxxxxxxxxxxxxxxxx
+- the state init/destroy/reset xxxxxxxxxxxxx
+- input xxxxxxxxxxxxxxxxxxxxx
+- read_commands, separate_commands, parse_commands
+- builtin
+- execute (but not for the fork/exec part)
+- make your FSM and now you can have a shell that you can "cd" and "exit"
+- rest of execute (fork/exec)

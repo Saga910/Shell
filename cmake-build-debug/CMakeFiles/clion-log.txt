@@ -1,36 +1,4 @@
-/snap/clion/178/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/178/bin/ninja/linux/ninja -G Ninja /home/saga910/Work/term4/shell-starter
--- The C compiler identification is GNU 10.3.0
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/cc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Found Doxygen: /usr/bin/doxygen (found version "1.9.1") found components: doxygen dot 
+/snap/clion/180/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/180/bin/ninja/linux/ninja -G Ninja /home/saga910/Work/term4/shell-starter
 -- Configuring done
-CMake Error at src/CMakeLists.txt:13 (add_executable):
-  Cannot find source file:
-
-    /home/saga910/Work/term4/shell-starter/src/builtins.c
-
-  Tried extensions .c .C .c++ .cc .cpp .cxx .cu .mpp .m .M .mm .ixx .cppm .h
-  .hh .h++ .hm .hpp .hxx .in .txx .f .F .for .f77 .f90 .f95 .f03 .hip .ispc
-
-
-CMake Error at tests/CMakeLists.txt:22 (add_executable):
-  Cannot find source file:
-
-    /home/saga910/Work/term4/shell-starter/src/builtins.c
-
-  Tried extensions .c .C .c++ .cc .cpp .cxx .cu .mpp .m .M .mm .ixx .cppm .h
-  .hh .h++ .hm .hpp .hxx .in .txx .f .F .for .f77 .f90 .f95 .f03 .hip .ispc
-
-
-CMake Error at src/CMakeLists.txt:13 (add_executable):
-  No SOURCES given to target: dc_shell
-
-
-CMake Error at tests/CMakeLists.txt:22 (add_executable):
-  No SOURCES given to target: dc_shell_test
-
-
-CMake Generate step failed.  Build files cannot be regenerated correctly.
+-- Generating done
+-- Build files have been written to: /home/saga910/Work/term4/shell-starter/cmake-build-debug

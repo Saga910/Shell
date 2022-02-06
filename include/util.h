@@ -80,4 +80,13 @@ void display_state(const struct dc_posix_env *env, const struct state *state, FI
  */
 char *state_to_string(const struct dc_posix_env *env,  struct dc_error *err, const struct state *state);
 
+/**
+ * Counts the number of elements to put in the path array.
+ * @param str path string.
+ * @param c delimiter.
+ * @return the number of elements divided by c.
+ */
+size_t count(const char *str, int  c);
+
+
 #endif // DC_SHELL_UTIL_H
