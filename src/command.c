@@ -3,7 +3,6 @@
 #include <dc_posix/dc_string.h>
 #include <dc_posix/dc_wordexp.h>
 #include "command.h"
-#include "shell.h"
 #include "shell_impl.h"
 /**
  * Parse the command. Take the command->line and use it to fill in all of the fields.
@@ -30,12 +29,13 @@ void parse_command(const struct dc_posix_env *env, struct dc_error *err, struct 
     if(dc_error_has_error(err)){
         state->fatal_error = true;
     }
-    char *left, *error;
+    char *left, *error = NULL;
     match_s = dc_regexec(env, &regex, cmd, 1, &match, 0);
 
     if(dc_error_has_error(err)){
         state->fatal_error = true;
     }
+
     if(match_s == 0){
         char *string;
 
@@ -70,6 +70,10 @@ void parse_command(const struct dc_posix_env *env, struct dc_error *err, struct 
 
     if(dc_error_has_error(err)){
         state->fatal_error = true;
+    }
+
+    if(error != NULL){
+        state->command->stderr_overwrite = true;
     }
 
     val = dc_regcomp(env, err, &regex, "[ \t\f\v][1^2]?>[>]?.*", REG_EXTENDED);
@@ -156,6 +160,8 @@ void parse_command(const struct dc_posix_env *env, struct dc_error *err, struct 
     l = dc_strlen(env,second);
     com_line = dc_malloc(env, err,l - length);
     dc_strncpy(env, com_line, second, l-length);
+
+
 
 }
 
