@@ -11,7 +11,6 @@
 #include "execute.h"
 #include "command.h"
 
-
 /**
  * Set up the initial state:
  *  - in_redirect_regex  "[ \t\f\v]<.*"
@@ -38,16 +37,8 @@ int init_state(const struct dc_posix_env *env, struct dc_error *err, void *arg){
 
     val = dc_regcomp(env, err, &regex, "[ \t\f\v]<.*", REG_EXTENDED);
     s->in_redirect_regex = &regex;
-    if(val != 0){
-        char *message;
-        size_t t;
+    error_r(env, err, val, regex);
 
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
-    }
 
     if(dc_error_has_error(err)){
         s->fatal_error = true;
@@ -57,16 +48,8 @@ int init_state(const struct dc_posix_env *env, struct dc_error *err, void *arg){
 
     val = dc_regcomp(env, err, &regex, "[ \t\f\v][1^2]?>[>]?.*", REG_EXTENDED);
     s->out_redirect_regex = &regex;
-    if(val != 0){
-        char *message;
-        size_t t;
+    error_r(env, err, val, regex);
 
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
-    }
     if(dc_error_has_error(err)){
         s->fatal_error = true;
         return ERROR;
@@ -74,16 +57,8 @@ int init_state(const struct dc_posix_env *env, struct dc_error *err, void *arg){
 
     val = dc_regcomp(env, err, &regex, "[ \t\f\v]2>[>]?.*", REG_EXTENDED);
     s->err_redirect_regex = &regex;
-    if(val != 0){
-        char *message;
-        size_t t;
+    error_r(env, err, val, regex);
 
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
-    }
     if(dc_error_has_error(err)){
         s->fatal_error = true;
         return ERROR;
@@ -108,6 +83,20 @@ int init_state(const struct dc_posix_env *env, struct dc_error *err, void *arg){
 
     return READ_COMMANDS;
 }
+
+void error_r(const struct dc_posix_env *env, struct dc_error *err, int a, regex_t reg){
+    if(a != 0){
+        char *message;
+        size_t to;
+
+        to = dc_regerror(env, a, &reg, NULL, 0);
+        message = dc_malloc(env, err, to + 1);
+        dc_regerror(env, a, &reg, message, to + 1);
+        fprintf(stderr, "%s", message);
+        dc_free(env, err, dc_strlen(env, message) + 1);
+    }
+}
+
 
 /**
  * Free any dynamically allocated memory in the state and sets variables to NULL, 0 or false.
@@ -257,7 +246,7 @@ int parse_commands(const struct dc_posix_env *env, struct dc_error *err, void *a
     struct state *s;
     s = (struct state *)arg;
 
-//    parse_command(env, err, s, s->command);
+    parse_command(env, err, s, s->command);
 
     if(dc_error_has_error(err)){
         s->fatal_error = true;

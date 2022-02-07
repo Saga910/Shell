@@ -4,6 +4,7 @@
 #include <dc_posix/dc_wordexp.h>
 #include "command.h"
 #include "shell.h"
+#include "shell_impl.h"
 /**
  * Parse the command. Take the command->line and use it to fill in all of the fields.
  *
@@ -17,67 +18,165 @@ void parse_command(const struct dc_posix_env *env, struct dc_error *err, struct 
     regex_t regex;
     regmatch_t match;
     int val = 0;
-    int matches;
-
-    val = dc_regcomp(env, err, &regex, "[ \t\f\v]<.*", REG_EXTENDED);
-    state->in_redirect_regex = &regex;
-    if(val != 0) {
-        char *message;
-        size_t t;
-
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
-    }
-
-    if(dc_error_has_error(err)){
-        state->fatal_error = true;
-    }
-
-    matches = dc_regexec(env, &regex, "a", 1, &match, 0);
-
-    dc_regfree(env, &regex);
-    if(dc_error_has_error(err)){
-        state->fatal_error = true;
-    }
-
-
-
-    val = dc_regcomp(env, err, &regex, "[ \t\f\v][1^2]?>[>]?.*", REG_EXTENDED);
-    state->out_redirect_regex = &regex;
-    if(val != 0){
-        char *message;
-        size_t t;
-
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
-    }
-    if(dc_error_has_error(err)){
-        state->fatal_error = true;
-    }
+    int match_s;
+    const char *cmd;
+    cmd = dc_strdup(env, err, command->line);
+    size_t length = 0;
 
     val = dc_regcomp(env, err, &regex, "[ \t\f\v]2>[>]?.*", REG_EXTENDED);
     state->err_redirect_regex = &regex;
-    if(val != 0){
-        char *message;
-        size_t t;
+    error_r(env, err, val, regex);
 
-        t = dc_regerror(env, val, &regex, NULL, 0);
-        message = dc_malloc(env, err, t + 1);
-        dc_regerror(env, val, &regex, message, t + 1);
-        fprintf(stderr, "%s", message);
-        dc_free(env, err, dc_strlen(env, message) + 1);
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
     }
+    char *left, *error;
+    match_s = dc_regexec(env, &regex, cmd, 1, &match, 0);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+    if(match_s == 0){
+        char *string;
+
+        regoff_t prog = match.rm_eo - match.rm_so;
+        string = dc_malloc(env, err, ((size_t) (prog + 1)));
+        dc_strncpy(env, string, &cmd[match.rm_so], (size_t) prog);
+        string[prog] = '\0';
+        length = dc_strlen(env,string);
+        char *token = dc_strtok(env,string, ">");
+        while (token != NULL)
+        {
+            error = dc_strdup(env, err, token);
+            token = dc_strtok(env, NULL, ">");
+        }
+        error = trim(error);
+        free(string);
+    }
+
+    size_t l = dc_strlen(env,cmd);
+
     if(dc_error_has_error(err)){
         state->fatal_error = true;
     }
 
+    left = dc_malloc(env, err, l - length);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    dc_strncpy(env,left, cmd, l - length);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    val = dc_regcomp(env, err, &regex, "[ \t\f\v][1^2]?>[>]?.*", REG_EXTENDED);
+    state->out_redirect_regex = &regex;
+    error_r(env, err, val, regex);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    char *out;
+    match_s = dc_regexec(env, &regex, left, 1, &match, 0);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    if(match_s == 0){
+        char *string;
+
+        regoff_t prog = match.rm_eo - match.rm_so;
+        string = dc_malloc(env, err, ((size_t) (prog + 1)));
+        dc_strncpy(env, string, &left[match.rm_so], (size_t) prog);
+        string[prog] = '\0';
+        length = dc_strlen(env,string);
+        char *token = dc_strtok(env,string, ">>");
+        while (token != NULL)
+        {
+            out = dc_strdup(env, err, token);
+            token = dc_strtok(env, NULL, ">>");
+        }
+        out = trim(out);
+        free(string);
+    }
+    l = dc_strlen(env,left);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    char *second = dc_malloc(env, err, l - length);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    strncpy(second, left, l -length);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+
+    val = dc_regcomp(env, err, &regex, "[ \t\f\v]<.*", REG_EXTENDED);
+    state->in_redirect_regex = &regex;
+
+    error_r(env, err, val, regex);
+
+    if(dc_error_has_error(err)){
+        state->fatal_error = true;
+    }
+
+    char *in;
+    match_s =  dc_regexec(env, &regex, second, 1, &match, 0);
+
+    if(match_s == 0){
+        char *string;
+
+        regoff_t prog = match.rm_eo - match.rm_so;
+        string = dc_malloc(env, err, ((size_t) (prog + 1)));
+        dc_strncpy(env, string, &left[match.rm_so], (size_t) prog);
+        string[prog] = '\0';
+        length = dc_strlen(env,string);
+        char *token = dc_strtok(env,string, "<");
+        while (token != NULL)
+        {
+            in = dc_strdup(env, err, token);
+            token = dc_strtok(env, NULL, "<");
+        }
+        in = trim(in);
+        free(string);
+    }
+    char *com_line;
+    l = dc_strlen(env,second);
+    com_line = dc_malloc(env, err,l - length);
+    dc_strncpy(env, com_line, second, l-length);
+
 }
+
+char* trim(const char* str)
+{
+    static char str1[99];
+    int count = 0, j, k;
+
+    while (str[count] == ' ') {
+        count++;
+    }
+
+    for (j = count, k = 0;
+         str[j] != '\0'; j++, k++) {
+        str1[k] = str[j];
+    }
+    str1[k] = '\0';
+
+    return str1;
+}
+
 
 /**
  *
@@ -85,33 +184,30 @@ void parse_command(const struct dc_posix_env *env, struct dc_error *err, struct 
  * @param command
  */
 void destroy_command(const struct dc_posix_env *env, struct command *command){
-    free(command->stdout_file);
-    command->stdout_file = NULL;
+    if(command != NULL){
+        command->stdout_file = NULL;
+        command->stderr_file = NULL;
+        command->stdin_file = NULL;
 
-    free(command->stderr_file);
-    command->stderr_file = NULL;
+        free(command->command);
+        command->command = NULL;
 
-    free(command->stdin_file);
-    command->stdin_file = NULL;
-
-    free(command->command);
-    command->command = NULL;
-
-    for (size_t i =0; i < (command->argc); i++){
-        if(command->argv[i]){
-            free(command->argv[i]);
-            command->argv[i] = NULL;
+        for (size_t i =0; i < (command->argc); i++){
+            if(command->argv[i]){
+                free(command->argv[i]);
+                command->argv[i] = NULL;
+            }
         }
+
+        command->argc = 0;
+
+        dc_free(env, command->line, sizeof(command->line));
+        command->line = NULL;
+
+        command->exit_code = 0;
+
+        command->stdout_overwrite = false;
+
+        command->stderr_overwrite = false;
     }
-
-    free(command->line);
-    command->line = NULL;
-
-    command->argc = 0;
-
-    command->exit_code = 0;
-
-    command->stdout_overwrite = false;
-
-    command->stderr_overwrite = false;
 }

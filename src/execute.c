@@ -32,7 +32,7 @@ void execute(const struct dc_posix_env *env, struct dc_error *err, struct comman
         s = handle_run_error(err);
         dc_exit(env, s);
     } else {
-        s = waitpid(f, &s, 0);
+        waitpid(f, &s, 0);
         if(WIFEXITED(s)){
             int num;
             num = WEXITSTATUS(s);

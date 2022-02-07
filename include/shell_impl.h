@@ -38,6 +38,15 @@
 int init_state(const struct dc_posix_env *env, struct dc_error *err, void *arg);
 
 /**
+ * Prints out the error message from regcomp.
+ * @param env the posix environment.
+ * @param err the error object
+ * @param a status code of regcomp
+ * @param reg regex_t.
+ */
+void error_r(const struct dc_posix_env *env, struct dc_error *err, int a, regex_t reg);
+
+/**
  * Free any dynamically allocated memory in the state and sets variables to NULL, 0 or false.
  *
  * @param env the posix environment.
