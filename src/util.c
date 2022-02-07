@@ -98,6 +98,7 @@ size_t count(const char *str, int  c){
  * @param err the error object
  */
 void do_reset_state(const struct dc_posix_env *env, struct dc_error *err, struct state *state){
+
     dc_free(env, state->current_line, state->current_line_length);
     state->current_line = NULL;
     state->current_line_length = 0;
@@ -108,27 +109,6 @@ void do_reset_state(const struct dc_posix_env *env, struct dc_error *err, struct
 
     dc_free(env, state->command, sizeof(struct command));
     state->command = NULL;
-
-
-
-//    dc_free(env, state->command->line, dc_strlen(env, state->command->line) + 1);
-//    state->command->line = NULL;
-
-//    for (size_t i =0; i < state->command->argc; i++){
-//        if(state->command->argv[i]){
-//            dc_free(env, state->command->argv[i], dc_strlen(env, state->command->line) +1);
-//        }
-//    }
-//
-//    dc_free(env, state->command->command, dc_strlen(env, state->command->command) +1);
-//
-//    state->command->exit_code = 0;
-//    state->command->stderr_overwrite = false;
-//    state->command->stdout_overwrite = false;
-//
-//    dc_free(env, state->command->stderr_file, dc_strlen(env, state->command->stdin_file) +1);
-//    dc_free(env, state->command->stderr_file, dc_strlen(env, state->command->stdout_file) +1);
-//    dc_free(env, state->command->stderr_file, dc_strlen(env, state->command->stderr_file) +1);
 
 }
 

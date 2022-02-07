@@ -9,6 +9,8 @@
 #include "input.h"
 #include "builtins.h"
 #include "execute.h"
+#include "command.h"
+
 
 /**
  * Set up the initial state:
@@ -129,7 +131,7 @@ int destroy_state(const struct dc_posix_env *env, struct dc_error *err, void *ar
     s->err_redirect_regex = NULL;
     s->current_line = NULL;
 
-//    destroy_command(env, s->command);
+    destroy_command(env, s->command);
 
     return DC_FSM_EXIT;
 }
@@ -282,18 +284,16 @@ int execute_commands(const struct dc_posix_env *env, struct dc_error *err, void 
     char **list = parse_path(env, err, path);
 
     if(dc_strcmp(env, s->command->command, "cd") == 0){
-//        builtin_cd(env, err, );
+        builtin_cd(env, err, s->command, s->stderr);
     } else if (dc_strcmp(env, s->command->command, "exit") == 0){
         return EXIT;
     } else{
-//        execute(env, err, s->command, list);
+        execute(env, err, s->command, list);
         if(dc_error_has_error(err)){
             s->fatal_error = true;
             return EXIT;
         }
     }
-
-
 
     if(dc_error_has_error(err)){
         s->fatal_error = true;

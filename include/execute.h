@@ -34,10 +34,28 @@
  */
 void execute(const struct dc_posix_env *env, struct dc_error *err, struct command *command, char **path);
 
+/**
+ *
+ * @param err
+ * @return
+ */
 int handle_run_error(struct dc_error *err);
 
+/**
+ *
+ * @param env
+ * @param err
+ * @param command
+ */
 void redirect(const struct dc_posix_env *env, struct dc_error *err, struct command *command);
 
+/**
+ *
+ * @param env
+ * @param err
+ * @param command
+ * @param path
+ */
 void run(const struct dc_posix_env *env, struct dc_error *err, struct command *command, char **path);
 
 #endif // DC_SHELL_EXECUTE_H

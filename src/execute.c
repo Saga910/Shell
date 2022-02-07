@@ -2,8 +2,8 @@
 #include <dc_posix/dc_stdlib.h>
 #include <dc_posix/dc_fcntl.h>
 #include <dc_posix/dc_string.h>
-#include <sys/wait.h>
 #include <dc_posix/dc_stdio.h>
+#include <sys/wait.h>
 #include "execute.h"
 
 /**
@@ -18,24 +18,30 @@
  */
 void execute(const struct dc_posix_env *env, struct dc_error *err, struct command *command, char **path){
     pid_t f;
-    int s;
+    int s = 0;
 
-    f = dc_fork(env, err);
+    f = fork();
 
     if(f == 0){
         redirect(env, err, command);
+
         if(dc_error_has_error(err)){
-            exit(126);
+            dc_exit(env, 126);
         }
         run(env, err, command, path);
         s = handle_run_error(err);
-    } else{
-        pid_t status;
-        status = waitpid(f, &s, WUNTRACED | WCONTINUED);
-        command->exit_code = status;
+        dc_exit(env, s);
+    } else {
+        s = waitpid(f, &s, 0);
+        if(WIFEXITED(s)){
+            int num;
+            num = WEXITSTATUS(s);
+            command->exit_code = num;
+        }
     }
 
 }
+
 
 int handle_run_error(struct dc_error *err){
 
@@ -86,32 +92,54 @@ int handle_run_error(struct dc_error *err){
 void redirect(const struct dc_posix_env *env, struct dc_error *err, struct command *command){
 
     if(command->stdin_file != NULL){
-        int status = dc_fileno(env, err, stdin);
+        int d = dc_open(env, err, command->stdin_file, O_RDWR);
 
-        int d = dc_open(env, err, (const char *) stdin, O_RDWR);
+        if(dc_error_has_error(err)){
+            dc_close(env, err, d);
+        }
 
-        dc_dup2(env, err, d, status);
+        dc_dup2(env, err, d, STDIN_FILENO);
+
+        dc_close(env, err, d);
+
     } else if(command->stdout_file != NULL){
         int d;
-        int status = dc_fileno(env, err, stdout);
 
-        if(command->stdout_file){
-            d = dc_open(env, err, (const char *) stdout, O_TRUNC);
+        if(command->stdout_overwrite == true){
+            d = dc_open(env, err, command->stdout_file, O_APPEND | O_CREAT);
+            if(dc_error_has_error(err)){
+                dc_close(env, err, d);
+            }
         } else{
-            d = dc_open(env, err, (const char *) stdout, O_APPEND);
+            d = dc_open(env, err, command->stdout_file, O_TRUNC | O_CREAT);
+            if(dc_error_has_error(err)){
+                dc_close(env, err, d);
+            }
         }
-        dc_dup2(env, err, d, status);
+
+        dc_dup2(env, err, d, STDOUT_FILENO);
+
+        dc_close(env, err, d);
 
     } else if(command->stderr_file != NULL){
         int d;
-        int status = dc_fileno(env, err, stderr);
 
-        if(command->stderr_overwrite){
-            d = dc_open(env, err, (const char *) stderr, O_TRUNC);
+        if(command->stderr_overwrite == true){
+            d = dc_open(env, err, command->stderr_file, O_APPEND | O_CREAT);
+            if(dc_error_has_error(err)){
+                dc_close(env, err, d);
+            }
+
         } else{
-            d = dc_open(env, err, (const char *) stderr, O_APPEND);
+            d = dc_open(env, err, command->stderr_file, O_TRUNC | O_CREAT);
+            if(dc_error_has_error(err)){
+                dc_close(env, err, d);
+            }
+
         }
-        dc_dup2(env, err, d, status);
+        dc_dup2(env, err, d, STDERR_FILENO);
+
+        dc_close(env, err, d);
     }
 }
 
@@ -119,18 +147,16 @@ void run(const struct dc_posix_env *env, struct dc_error *err, struct command *c
 
     if((dc_strchr(env, command->command, '/') != NULL)){
         command->argv[0] = dc_strdup(env, err, command->command);
-        dc_execv(env, err, (const char *) &path, command->argv);
+        dc_execv(env, err, command->command, command->argv);
     } else{
         if(path[0] == NULL){
-            err->errno_code = ENOENT;
+            DC_ERROR_RAISE_ERRNO(err, ENOENT);
         } else{
-            for(char *str = *path; str; str++){
-                int s;
-                char *cmd = dc_strdup(env, err,command->command);
-                cmd = dc_strdup(env, err, str);
+            for(char *str = *path; str; *++path){
+                char *cmd = dc_strdup(env,err, dc_strcat(env, dc_strcat(env, str, "/"), command->command));
                 command->argv[0] = dc_strdup(env, err, cmd);
-                s = dc_execv(env, err, cmd, command->argv);
-                if(s == ENOENT){
+                dc_execv(env, err, cmd, command->argv);
+                if(err->errno_code != ENOENT){
                     break;
                 }
             }

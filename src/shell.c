@@ -2,6 +2,7 @@
 #include "shell_impl.h"
 #include "state.h"
 #include "shell_impl.h"
+#include <dc_posix/dc_stdlib.h>
 
 /**
  * Run the shell FSM.
@@ -41,12 +42,22 @@ int run_shell(const struct dc_posix_env *env, struct dc_error *error, FILE *in, 
 
     struct dc_fsm_info *info;
 
-    info = dc_fsm_info_create(env, error, "shell");
+    struct state state;
+
+    info = dc_fsm_info_create(env, error, "dc_shell");
+
+    if(dc_error_has_error(error)){
+        ret_val = 1;
+    }
 
     if(dc_error_has_no_error(error)){
+        ret_val = EXIT_SUCCESS;
         int from;
         int to;
-        ret_val = dc_fsm_run(env, error, info, &from, &to, in, transitions);
+        state.stdin = in;
+        state.stderr = err;
+        state.stdout = out;
+        ret_val = dc_fsm_run(env, error, info, &from, &to, &state, transitions);
         dc_fsm_info_destroy(env,&info);
     }
 
